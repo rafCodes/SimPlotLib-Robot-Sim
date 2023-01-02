@@ -1,0 +1,9 @@
+abc
+numpy
+scipy
+pandas
+nptyping
+sklearn
+json
+xlrd == 2.0.1
+matplotlib
