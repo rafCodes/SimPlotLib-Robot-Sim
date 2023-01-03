@@ -104,7 +104,9 @@ This is a lot of abstraction that takes place for GUI elements and how a GUI ele
 Previously before displaySimTools, all matplotlib functionality was unique and hard-coded in, I wanted to avoid this because it made the code harder to work with and if someone with less matplotlib experience wanted to make a simulation, it was very complicated.  
 
 Before displaySimTools existed, to use matplotlib, the entire structure of a particular plot usually had to be built from scratch and hard coded every time. However, now with displaySimTools, all the matplotlib support framework has been created, so for waypointGeneration, all that I had to do was build the logic and the functions needed to actually interact with the waypoints, edges, and obstacles based off of mouse clicks. This made development faster and allowed for code reuse. I also added an abstract interface inside of displaySimTools so that any new simulations or general matplotlib tools can use this abstract class to have a framework for what is needed to run the simulation. This abstract interface later become SimBaseClass.  
+
 Also, previously the middle mouse button was used to click plot buttons to avoid interacting with the graph area, but this changed to checking if the mouse click on the matplotlib window was within a certain range that defined the plot to make the program easier to use.   
+
 Previously for simulationBaseClass, only some functions were included but new simulations would have to repeatedly set up resizing and clicking. This led to a lot of code duplication so we changed it so that the simulationBaseClass would automatically connect to the resizing and clicking functionalities to displaySimTools and would instead be dependent on a displaySimConfig for each simulation for if clicking, resizing, and moving elements should be enabled. I also made it so these functions are also automatically connected to display simulation to avoid having to hard code more functionality and instead leverage flexibility.  
 
 ## Performance <a name=“performance”></a>
@@ -126,7 +128,6 @@ Additions: Shubham Goda
 - [Summary and Outcomes](#summary-and-outcomes--1)
 - [Terminology](#terminology--1)
 - [How to Use](#how-to-use--1)
-- [Background Research](#background-research--1)
 - [System Information](#system-information--1)
   - [Information Sent](#information-sent--1)
   - [Information Received](#information-received--1)
@@ -141,7 +142,7 @@ Additions: Shubham Goda
 This is an entry for all simulations and displays developed using displaySimTools and simBaseClass.  
 This includes:  
 * bulkMapGenerationSim – used for generating random obstacle maps in bulk  
-* carCalibrationSim – used to calibrate the potential field of a vehicle as well as a rough estimate of PID values output
+* carCalibrationSim – used to calibrate the potential field of a vehicle as well as a rough estimate of PID values output  
 * rrtSim – used to test the and visualize the RRT path generation and see how it reacts to obstacles being moved around  
 * waypointGeneration – used extensively in competitions, lets us see what an autoMap looks like and lets us create maps. It also lets us visualize a previous trial’s path, visualize a previous trial’s path driven by a little dot, and see our shortest path algorithm calculated routes  
 
@@ -149,12 +150,14 @@ This includes:
 **Waypoint** - a node on the map  
 **Edge** - a path connecting two waypoints  
 **clickCache** - a way to temporarily store information about what was clicked  
-**autoMap** - the map format used by all simulations and displays, except for carCalibrationSim, and is located inside of routePlanner and contains information about the waypoints, edges, obstacles, and goals of a certain map.  
+**autoMap** - the map format used by all simulations and displays, except for carCalibrationSim, and is located inside of routePlanner and contains information about the waypoints, edges, obstacles, and goals of a certain map  
 
 ## How to Use <a name=“how-to-use”></a>
 To run a simulation, a config for the simulation and the display as well as any other parameters including the map and path must be passed to the instantiation of the simulation (add map). Any simulation must instantiate the initialization of the base class which allows for all the required variables and configurations to be set. A few functions must also be implemented including the setup function and populate GUI function and populate graph function.  
 In both of these functions, a base function is available to add frequently used GUI buttons and elements of the plot, populateBaseGUI and populateBaseGraph, and remove a lot of duplicated code within the simulations.  
+
 After setting all of this up, as well as the super for the base class initialization, instantiate the class and run the function displayFullSimulation. Running this function will begin the simulation and, if you have all your buttons set up correctly and all the functions linked as shown in examples that can be found in the simulationBaseClass and other simulations mentioned in this wiki entry, then they will all update automatically as you change and interact with the elements on the display.  
+
 If no map is given then a blank map will be generated by default.  
 The built in buttons include Next Map, Previous Map, Convert Map, Export to JSON, Reset, Debug, Random, Click Toggle, and Drag Toggle.  
 
@@ -220,7 +223,7 @@ Link: [Video Demo](https://drive.google.com/file/d/1vlHwbK-w0EzoMNNbu0Df33J59Cyb
 Link: [Video Demo](https://drive.google.com/file/d/1f5oTBVPYx31XedULWN3a-fRiKUiVNY7r/view?usp=sharing)
 No extra buttons are added; however, moving the obstacles will update the RRT path in real-time.   
 
-### waypointGeneration: 
+### waypointGeneration:  
 
 Link: [Video Demo](https://drive.google.com/file/d/1tgiTUIcpJ6V4D55hE6M9NuoCrNqSdUdS/view?usp=sharing)
 7 buttons were added with 1 slider:  
@@ -237,9 +240,6 @@ Link: [Video Demo](https://drive.google.com/file/d/1tgiTUIcpJ6V4D55hE6M9NuoCrNqS
 When sending the trial data, make sure row 1 is x position, row 2 is y position, row 4 is heading x, row 5 is heading y, row 7 is heading, row 8 is speed, row 9 is seconds, row 10 is milliseconds  
 
 The distance that constitutes as near when clicking near a waypoint can be changed in the SimMainConfig config under waypointGenerationConfig.nearPoint
-
-## Background Research <a name=“two-background-research”></a>
-None.
 
 ## System Information <a name=“two-system-information”></a>
 Runs off of displaySimTools and the abstract interface simulationBaseClass.  
@@ -275,12 +275,18 @@ No new algorithms. Runs off SimBaseClass code and updates itself from the RRT Co
 ### WaypointGeneration
 The algorithms currently used focus on the mouse input and the states of the plot. When the mouse is clicked, 6 different pieces of data are sent, the x and y coordinates for where the mouse is clicked on the plot (referenced here as mouse click location), the x and y coordinates for where the mouse was clicked on matplotlib window, and what button number was clicked - 1 for left, 2 for middle, and 3 for right. By looking at these different pieces of information and if an obstacle or waypoint is being made as well as what is currently in the clickCache, the operation can be determined.  
 The logic first checks if the mouse clicked inside the plot and if the left or right click button was clicked. If this is true then it checks if the start waypoint condition set by the “Place Start” button is True to be placed and if it is, places it where the mouse clicked. By checking for if the mouse clicked inside the plot, when clicking buttons, random points are not added to the plot.  
+
 If the start waypoint condition is false, then it checks if it is currently in waypoint placement mode, and if it is, checks if the location of where the mouse clicked is next to one of the waypoints. It does this by finding all the distances between the mouse click location and each waypoint and selecting the smallest. If the smallest is within the near distance, then location is added to the clickCache where it is temporarily saved.  
+
 If the clickCache has two points, then there is a pair, and this means that either this pair will be used to make an edge between two different points if left click was the last click or used to delete an edge between two waypoints if right click was the last click. If the two points inside of clickCache are the same, this means that the points should be deleted. Whenever an edge is deleted, is removed from the edge list. Waypoints themselves do not contain information about edges so no updating is needed there, reducing overhead. The waypoints later get edge information when they are loaded by the routePlanner. If a waypoint is removed, all edges associated with it are also removed. If the mouse click was not near a waypoint this means that this is a new waypoint, so a new waypoint is created at the location of the mouse click.  
+
 If the map is currently in obstacle placement mode, then it uses a similar process for the clickCache, checking that two clicks have been made to create a rectangle from them. The checking process sets a variable, self.obsPair, to True once one point has been picked so that it can be plotted, and sets it to False once an obstacle has been created. To delete an obstacle, it checks if the mouse click location was inside of a current obstacle and if right click was pressed.  
 Other functionality also includes making an obstacle from two corners, if an edge should be added or removed since the selection of an edge to be removed could be inverted in relation to the edge in the edges list, and whenever creating edges, if it would be a duplicate edge, it is not created.   
+
 When Drive Car is pressed, the trial data is iterated over with a step of the value of Time and the heading is calculated based on the car’s movements. The calculated heading as well as the heading located in the trial data is shown on the map with a dot that signifies the car that moves around the map.  
+
 When Show Car Path is press, the trial data is again iterated over with a step of the value of Time and the entire path is shown on once.  
+
 When Simulate Path is pressed, the simulation takes information from the MainConfig map information and runs the optimizer on it - which can be either the shortest path or the optimal path based off of the left and right sides of a track - and stores the movements that the car will be doing from 1 node to the next. Then if Move forward is pressed then the path will be iterated on and the next segment of the path will be shown and can be automatically done by pressing Random. This is undone with Move backward. Using this method, path that the car will take can be visualized on whatever map is currently shown.  
 
 ### Previous or Unused Algorithms with Rationale <a name=“two-previous-or-unused-algorithms-with-rationale”></a> 
